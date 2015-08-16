@@ -9,7 +9,7 @@ For RNA-seq data, the strategy taken is to count the number of reads that fall i
 
 3. The Poisson model doesn't work either -- it is a single parameter model with mean == variance and real data has more variance than Poisson can explain (which we will look at in our dataset).
 
-**Solution:** Employing methods which assess the mean-variance relationship to help with the problem of estimating biological variability for experiments with small number of replicates. 
+**Solution:** Appropriate modelling of the mean-variance relationship in DGE data is important for making inferences about differential expression. Employing methods which assess the mean-variance relationship to help with the problem of estimating biological variability for experiments with small number of replicates. 
 
 In this module, learners will use [R Statistical Software](https://www.r-project.org/) to walk-through activities designed to compare the performance of different tools (edgeR, DESeq2, limma-voom) for differential expression analysis of RNA-Seq data, and how the mean-variance relationship is addressed in datasets with increasing number of replicates.
 
