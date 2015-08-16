@@ -13,6 +13,7 @@ Script used to generate the bottomly_eset.RData
 # Load required libraries 
 library(DESeq2)
 library(edgeR)
+library(limma)
 library(pheatmap)
 library(RColorBrewer)
 
