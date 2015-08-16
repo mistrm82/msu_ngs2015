@@ -1,0 +1,47 @@
+---
+title: "Setting up"
+date: "08/15/2015"
+output: html_document
+layout: topic
+---
+
+# Setting up
+Script used to generate the bottomly_eset.RData
+
+```{r setup}
+
+# Load required libraries 
+library(DESeq2)
+library(edgeR)
+library(pheatmap)
+library(RColorBrewer)
+
+# Load data from eset from ReCount
+load('bottomly_eset.RData')
+
+```
+
+We want to evaluate our tools in the context of replicates and within group variability. Therefore we need to create datasets with varying number of replicates.
+
+```{r create-data}
+# Convert metadata to factors
+pData(bottomly.eset)$experiment.number <- factor(pData(bottomly.eset)$experiment.number)
+pData(bottomly.eset)$lane.number <- factor(pData(bottomly.eset)$lane.number)
+
+# Get indices for each sample group 
+C57 <- which(pData(bottomly.eset)$strain == 'C57BL/6J')
+DBA <- which(pData(bottomly.eset)$strain == 'DBA/2J')
+
+# Randomly sample 5 reps from each
+reps <- c(sample(C57, 5), sample(DBA, 5))
+bottomly.5reps <- bottomly.eset[ ,reps]
+
+# Randomly sample 2 reps from each
+reps <- c(sample(C57, 2), sample(DBA, 2))
+bottomly.2reps <- bottomly.eset[ ,reps]
+
+# Clean up
+rm(reps)
+rm(C57)
+rm(DBA)
+```
