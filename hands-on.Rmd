@@ -3,8 +3,15 @@ title: "MSU - Week 3: Statistical models of Differential Expression"
 date: "08/15/2015"
 output: html_document
 layout: topic
-minutes: 20
+bibliography: references.bib
 ---
+
+```{r, echo=FALSE}
+library(knitcitations)
+cleanbib()
+options("citation_format" = "pandoc")
+```
+
 
 # The mean-variance relationship (and what it means)
 
@@ -47,15 +54,17 @@ dev.off()
 Appropriate modeling of the mean-variance relationship in DGE data is important for making inferences about differential expressionIn RNA-Seq data, genes with larger average expression have on average larger observed variances across samples, that is, they vary in expression from sample to sample more than other genes with lower average expression. This phenomena of 'having different scatter' is known as data **heteroscedasticity**. In our figures, we observe this heteroscedasticity except that the logarithmic transformation counteracts this and overdoes the adjustment somewhat so that large log-counts now have smaller scatter than small log-counts. More, importantly we see the scatter tends to reduce as we increase the number of replicates.
 
 # Statistical models for DE analysis
-The low levels of replication rule out, for all practical purposes, distribution-free rank or permutation-based methods. The Poisson model doesn't work either -- it is a single parameter model with mean == variance and real data has more variance than Poisson can explain (which we will look at in our dataset). The Negative Binomial model is a good approximation, where the variability between replicates is modeled by the **dispersion parameter**. 
+The low levels of replication rule out, for all practical purposes, distribution-free rank or permutation-based methods. The Poisson model doesn't work either -- it is a single parameter model with mean == variance and real data has more variance than Poisson can explain (which we will look at in our dataset). The Negative Binomial model is a good approximation, where the variability between replicates is modeled by the **dispersion parameter** `r citep("10.1038/nprot.2013.099")`. 
 
 [edgeR](http://www.bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) and [DESeq2](https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.pdf) are two very popular tools which implement differential expression analysis on the basis of the NB model. They offer overlapping functionality but differ crucially in the way dispersions are estimated. Accurate estimation of the dispersion parameter is critical for the statistical inference of differential expression.
 
-## DESeq2
-Both methods utilize the concept of “borrowing information from genes”; using the whole dataset to compute a common value, trend, or prior distribution for the dispersions, and then shrink individual gene-wise dispersion estimates toward this chosen anchor. With DESeq2 the first round of estimates are computed using maximum likelihood, and a curve is fit to provide an estimate of expected dispersion. Then the **gene-wise dispersion estimates are shrunken toward the values predicted by the curve** to obtain final
-dispersion values. Look at the dispersion-mean plots below, What do you see?
 
-```{r deseq2}
+## DESeq2
+Both methods utilize the concept of “borrowing information from genes”; using the whole dataset to compute a common value, trend, or prior distribution for the dispersions, and then shrink individual gene-wise dispersion estimates toward this chosen anchor. With DESeq2 the first round of estimates are computed using maximum likelihood, and a curve is fit to provide an estimate of expected dispersion. Then the **gene-wise dispersion estimates are shrunken toward the values predicted by the curve** to obtain final dispersion values `r citep("10.1186/s13059-014-0550-8")`. 
+
+Look at the dispersion-mean plots below, What do you see?
+
+```{r deseq2, fig.align='center'}
 # Create DESeq2 datasets
 dds <- DESeqDataSetFromMatrix(countData = exprs(bottomly.eset), colData = pData(bottomly.eset), design = ~ strain )
 dds <- DESeq(dds)
@@ -77,12 +86,12 @@ plotDispEsts(dds.2rep)
 The final estimates for datasets with so few replicates result in values that are so far off from the initial estimates. This is because the strength of shrinkage depends (i) on an estimate of how close true dispersion values tend to be to the fit and (ii) on the degrees of freedom. _As the sample size decreases, the shrinkage increases in strength._ In the case of a 2 replicate dataset it seems that for many genes the dispersion is being well overestimated which may lower the rate of true detection.
 
 ## edgeR
-In edgeR, a common dispersion is first estimated for all the tags and then an empirical Bayes strategy is applied for **squeezing the tagwise dispersions towards the common dispersion**. The 'Trended' and 'Common' dispersions are partly for diagnostic purposes and partly to give a general idea of the magnitude of the dispersions before it estimates the tagwise values (however, neither are used explicitly). The amount of shrinkage is determined by the prior weight given to the common dispersion (or the dispersion trend) and the precision of the tagwise estimates, and can be considered as the prior degrees of freedom.
+In edgeR, a common dispersion is first estimated for all the tags and then an empirical Bayes strategy is applied for **squeezing the tagwise dispersions towards the common or trended dispersion**. The 'Trended' and 'Common' dispersions are partly for diagnostic purposes and partly to give a general idea of the magnitude of the dispersions before it estimates the tagwise values (however, neither are used explicitly). The amount of shrinkage is determined by the prior weight given to the common dispersion (or the dispersion trend) and the precision of the tagwise estimates, and can be considered as the prior degrees of freedom `r citep("10.1093/bioinformatics/btp616")`.
 
 Biological CV (BCV) is the coefficient of variation with which the (unknown) true abundance of the gene varies between replicate RNA samples. Dispersion estimates are obtained by squaring the BCV values. Look at the BCV-mean expression plots below, What do you see?
 
 
-```{r edgeR}
+```{r edgeR, fig.align='center'}
 
 dge <- DGEList(counts=exprs(bottomly.eset), group=pData(bottomly.eset)$strain)
 # Normalize by total count
@@ -124,3 +133,24 @@ plotBCV(dge.5reps)
 ```
 
 The BCV value can be interpreted as the percentage of variation observed in the true abundance of a gene between replicates. For example, with the full dataset the common BCV is 0.19 which indicates that the true abundance for a gene can vary by 19% up or down between replicates. We find this number increases as the number of biological replicates decreases (0.20, 0.22 for five and two replicates, respectively). More importantly, the scatter in the two replicate dataset for tag-wise estimates is large for low expressor genes and BCV values range quite high (~0.8).
+
+
+## limma-voom
+Negative Binomial methods treat the dispersion estimates as if they were known parameters without accounting for uncertainty of estimation, which can make the testing overly liberal in type I error rate control (increased false positives). Empirical Bayes methods based on the NB don’t have the ability to adapt to different types of data with high or low dispersion parameter heterogeneity -- and can’t get the same robustness with small sample size datasets as you can with corresponding methods with microarrays `r citep("10.1186/gb-2014-15-2-r29")`.
+
+Enter [limma-voom](http://www.bioconductor.org/packages/release/bioc/vignettes/limma/inst/doc/usersguide.pdf).
+
+The voom (variance modeling at the observational level) transformation is applied to the read counts. This converts the counts to log-counts per million with associated precision weights. After this, the RNA-seq data can be analyzed as if it was microarray data. This means for example that any of the linear modelling or gene set testing methods in the limma package can be applied to RNA-seq data.
+
+
+
+
+## DEG comparisons with full dataset
+
+## DEG comparisons with 2 replicates
+
+# References
+
+```{r writebib, echo=FALSE, message=FALSE, warning=FALSE}
+write.bibtex(file="references.bib")
+```
