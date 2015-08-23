@@ -140,8 +140,33 @@ Negative Binomial methods treat the dispersion estimates as if they were known p
 
 Enter [limma-voom](http://www.bioconductor.org/packages/release/bioc/vignettes/limma/inst/doc/usersguide.pdf).
 
-The voom (variance modeling at the observational level) transformation is applied to the read counts. This converts the counts to log-counts per million with associated precision weights. After this, the RNA-seq data can be analyzed as if it was microarray data. This means for example that any of the linear modelling or gene set testing methods in the limma package can be applied to RNA-seq data.
+The voom (variance modeling at the observational level) transformation is applied to the read counts. 
 
+1. Gene-wise linear models are fitted to the normalized log-cpm values (accounting for all relevant factors); this generates a residual standard deviation for each gene 
+2. A robust trend is then fitted to the residual standard deviations as a function of the average log-count for each gene
+3. The fitted log-cpm (from the linear model fit) for each observation is converted into a predicted count. Using this predicted count the standard deviation is interpolated from the trend.
+4. The inverse squared predicted standard deviation for each observation becomes the weight for that observation.
+
+After this, the RNA-seq data can be analyzed as if it was microarray data. This means for example that any of the linear modelling or gene set testing methods in the limma package can be applied to RNA-seq data.
+
+```{r}
+
+# Apply TMM Normalization
+dge <- DGEList(counts=exprs(bottomly.eset))
+dge <- calcNormFactors(dge)
+
+# Create design matrix
+design <- model.matrix(~ 0 + pData(bottomly.eset)$strain)
+colnames(design) <- levels(pData(bottomly.eset)$strain)
+
+# Apply voom transformation
+v <- voom(exprs(bottomly.eset), design, plot=TRUE)
+
+# Usual limma pipeline
+fit <- lmFit(v, design)
+fit <- eBayes(fit)
+
+```
 
 
 
