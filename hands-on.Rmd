@@ -151,26 +151,88 @@ After this, the RNA-seq data can be analyzed as if it was microarray data. This 
 
 ```{r}
 
-# Apply TMM Normalization
-dge <- DGEList(counts=exprs(bottomly.eset))
-dge <- calcNormFactors(dge)
-
 # Create design matrix
 design <- model.matrix(~ 0 + pData(bottomly.eset)$strain)
 colnames(design) <- levels(pData(bottomly.eset)$strain)
-
+  
 # Apply voom transformation
 v <- voom(exprs(bottomly.eset), design, plot=TRUE)
 
-# Usual limma pipeline
-fit <- lmFit(v, design)
-fit <- eBayes(fit)
+# Do same for 5 replicate dataset
+design <- model.matrix(~ 0 + pData(bottomly.5reps)$strain)
+colnames(design) <- levels(pData(bottomly.5reps)$strain)
+v.5reps <- voom(exprs(bottomly.5reps), design, plot=TRUE)
+
+# Do same for 2 replicates dataset
+design <- model.matrix(~ 0 + pData(bottomly.2reps)$strain)
+colnames(design) <- levels(pData(bottomly.2reps)$strain)
+v.2reps <- voom(exprs(bottomly.2reps), design, plot=TRUE)
 
 ```
 
-
+Low replicate samples --> will have larger weights?
 
 ## DEG comparisons with full dataset
+The next step is to identify a list of differentially expressed genes using each of the three tools. We will set a fairly liberal threshold of FDR < 0.05 to select genes as 'siginificantly' differentially expressed between the two mouse strains. 
+
+
+### edgeR 
+Let's start with edgeR. The DGE object we previously created contains the i) original count data, ii) the sample group information, iii) normalization factors for each sample, and iv) the dispersion estimates. The next step is to take all the available for information for each gene and fit the expression data to the model. We can then make contrasts to specify the comparison we wish to make (in our case this is simple, since we have only two groups) and extract the statistics for our results. **How many genes are differentially expressed between C57BL/6J and DBA/2J?** 
+
+```{r}
+## edgeR ##
+# Design matrix
+design.mat <- model.matrix(~ 0 + dge$samples$group)
+colnames(design.mat) <- c("C57BL", "DBA")
+
+# Model fitting
+fit.edgeR <- glmFit(dge, design.mat)
+
+# Differential expression
+contrasts.edgeR <- makeContrasts(C57BL - DBA, levels=design.mat)
+lrt.edgeR <- glmLRT(fit.edgeR, contrast=contrasts.edgeR)
+
+# Access results tables
+edgeR_results <- lrt.edgeR$table
+sig.edgeR <- decideTestsDGE(lrt.edgeR, adjust.method="BH", p.value = 0.05)
+
+```
+
+### DESeq2
+Similar to edgeR, with DESeq2, we have a DESeq object that was previously created when we ran the `DESeq()` function. The difference is that DESeq is less verbose, requiring fewer lines of code to generate the same information. In one fell swoop, the DESeq functions generates all the required statistics from normalization to coefficients from the model fit. Al we are required to do is specify the comparisons we wish to make and extract the relevant data.  **How many genes are differentially expressed between C57BL/6J and DBA/2J?** 
+
+```{r}
+
+## DESeq2 ##
+contrast.deseq2 <- list("strainC57BL.6J", "strainDBA.2J")
+deseq2_results <- results(dds, contrast=contrast.deseq2)
+deseq2_results$threshold <- as.logical(deseq2_results$padj < 0.01)
+```
+
+
+### limma-voom
+```{r}
+
+## voom-limma ##
+
+# Create design matrix
+design <- model.matrix(~ 0 + pData(bottomly.eset)$strain)
+colnames(design) <- c("C57BL", "DBA")
+
+# Make contrasts
+contrasts.voom <- makeContrasts(C57BL - DBA, levels=design)
+
+# Usual limma pipeline
+fit.voom <- lmFit(v, design, contrasts=contrasts.voom)
+fit.voom <- eBayes(fit)
+
+fit.voom <- treat(fit.voom,lfc=log2(1.2))
+topTreat(fit.voom)
+voom_results <- topTable(fit.voom, adjust="BH", number = nrow(exprs(bottomly.eset)))
+sig.voom <- as.logical(voom_results$adj.P.Val < 0.01)
+
+```
+  
 
 ## DEG comparisons with 2 replicates
 
