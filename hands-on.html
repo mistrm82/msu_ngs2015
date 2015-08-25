@@ -322,6 +322,10 @@ genes.voom.2reps &lt;- row.names(voom_results_2reps)[which(voom_results_2reps$th
 <p>You should find that with the 2-replicate dataset, in general each tool identifies a much smaller set of significant genes. Also, not a surprise that our overlap is much smaller since we have fewer genes to begin with (on the range of ~15-30% compared to ~50-80%).</p>
 </div>
 </div>
+<div id="how-many-replicates-are-sufficient" class="section level2">
+<h2>How many replicates are sufficient?</h2>
+<p>In a nicely designed <a href="http://arxiv.org/pdf/1505.00588.pdf">48-replicate experiment</a> (S. cerevisae; wt and <em>snf2</em> knock-out mutant), researchers sought to answer this question examined the same three tools used here to see which best represented read-count distribution. When the authors removed 6-8 bad replicates from their pool of 48 samples, their data became consistent with a negative binomial distribution. Assuming experimental variability similar to the authors, this indicates at least 6 replicates in a DGE experiment is good practice. Their findings also favour the approach implemented in edgeR, where variance for one gene is squeezed towards a common dispersion calculated across all genes.</p>
+</div>
 <div id="take-home-message" class="section level2">
 <h2>Take-Home message</h2>
 <p>The underlying <strong>read-count distribution for a gene is a fundamental property of RNA-seq data</strong> but without a large number of measurements/replicates it is not possible to identify the form of this distribution unambiguously. <strong>Fewer replicates means the true distribution of read counts for an individual gene is unclear.</strong> Many DGE tools make strong assumptions about the form of this underlying distribution, thus having an unreliable distribution can impact on their ability to correctly identify significantly DE genes.</p>
