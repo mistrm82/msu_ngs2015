@@ -152,7 +152,7 @@ The voom (variance modeling at the observational level) transformation is applie
 
 After this, the RNA-seq data can be analyzed as if it was microarray data. This means for example that any of the linear modelling or gene set testing methods in the limma package can be applied to RNA-seq data. _Note for the design matrix we include an intercept, since we will be using linear models as opposed to GLMs._
 
-```{r}
+```{r, fig.align='center'}
 
 # Create design matrix
 design <- model.matrix(~ pData(bottomly.eset)$strain)
@@ -309,7 +309,7 @@ genes.voom.2reps <- row.names(voom_results_2reps)[which(voom_results_2reps$thres
 
 How do the number of genes identified using the 2-replicate dataset compared to the results from the full dataset? How does the overlap compare?
 
-```{r}
+```{r, fig.align='center'}
 length(genes.deseq.2reps)
 length(genes.edgeR.2reps)
 length(genes.voom.2reps)
@@ -319,8 +319,11 @@ venn(list(edgeR = genes.edgeR.2reps, DESeq2 = genes.deseq.2reps, voom = genes.vo
 
 You should find that with the 2-replicate dataset, in general each tool identifies a much smaller set of significant genes. Also, not a surprise that our overlap is much smaller since we have fewer genes to begin with (on the range of ~15-30% compared to ~50-80%). 
 
+## How many replicates are sufficient?
+In a nicely designed [48-replicate experiment](http://arxiv.org/pdf/1505.00588.pdf) (S. cerevisae; wt and _snf2_ knock-out mutant), researchers sought to answer this question  examined the same three tools used here to see which best represented read-count distribution. When the authors removed 6-8 bad replicates from their pool of 48 samples, their data became consistent with a negative binomial distribution. Assuming experimental variability similar to the authors, this indicates at least 6 replicates in a DGE experiment is good practice. Their findings also favour the approach implemented in edgeR, where variance for one gene is squeezed towards a common dispersion calculated across all genes. 
+
 ## Take-Home message
-The underlying **read-count distribution for a gene is a fundamental property of RNA-seq data** but without a large number of measurements/replicates it is not possible to identify the form of this distribution unambiguously. **Fewer replicates means the true distribution of read counts for an individual gene is unclear.** Many DGE tools make strong assumptions about the form of this underlying distribution, thus having an unreliable distribution can impact on their ability to correctly identify significantly DE genes. 
+The underlying **read-count distribution for a gene is a fundamental property of RNA-seq data** but without a large number of measurements/replicates it is not possible to identify the form of this distribution unambiguously. **Fewer replicates means the true distribution of read counts for an individual gene is unclear.** Many DGE tools make strong assumptions about the form of this underlying distribution, thus having an unreliable distribution can impact on their ability to correctly identify significantly DE genes.  
 
 # References
 
