@@ -15,8 +15,18 @@ options("citation_format" = "pandoc")
 
 # The mean-variance relationship (and what it means)
 
-Let's start by loading the data:
+Let's start by loading the filtered data and the required libraries:
 ```{r load}
+
+# Load required libraries 
+library(DESeq2)
+library(edgeR)
+library(limma)
+library(Biobase)
+library(pheatmap)
+library(RColorBrewer)
+
+
 load('bottomly_eset.RData')
 ```
 
@@ -47,8 +57,6 @@ mean.vec <- apply(cpm.mat, 1, mean)
 sdvec <- apply(cpm.mat, 1, sd)
 plot(mean.vec, sdvec, pch=".", main="10 replicates", ylab="sd", xlab="Average logCPM")
 
-dev.off()
-
 ```
 
 Appropriate modeling of the mean-variance relationship in DGE data is important for making inferences about differential expressionIn RNA-Seq data, genes with larger average expression have on average larger observed variances across samples, that is, they vary in expression from sample to sample more than other genes with lower average expression. This phenomena of 'having different scatter' is known as data **heteroscedasticity**. In our figures, we observe this heteroscedasticity except that the logarithmic transformation counteracts this and overdoes the adjustment somewhat so that large log-counts now have smaller scatter than small log-counts. More, importantly we see the scatter tends to reduce as we increase the number of replicates.
@@ -64,7 +72,7 @@ Both methods utilize the concept of “borrowing information from genes”; usin
 
 Look at the dispersion-mean plots below, What do you see?
 
-```{r deseq2, fig.align='center'}
+```{r deseq2, fig.align='center', warning=FALSE, message=FALSE}
 # Create DESeq2 datasets
 dds <- DESeqDataSetFromMatrix(countData = exprs(bottomly.eset), colData = pData(bottomly.eset), design = ~ strain )
 dds <- DESeq(dds)
@@ -77,8 +85,7 @@ dds.2rep <- DESeq(dds.2rep)
 
 
 # Plot dispersion estimates
-par(mfrow=c(2,2))
-plotDispEsts(dds, cex=0.2)
+plotDispEsts(dds)
 plotDispEsts(dds.5rep)
 plotDispEsts(dds.2rep)
 ```
@@ -128,8 +135,8 @@ dge.2reps<- estimateGLMTagwiseDisp(dge.2reps,design.mat)
 
 # Plot mean-variance
 plotBCV(dge)
-plotBCV(dge.2reps)
 plotBCV(dge.5reps)
+plotBCV(dge.2reps)
 ```
 
 The BCV value can be interpreted as the percentage of variation observed in the true abundance of a gene between replicates. For example, with the full dataset the common BCV is 0.19 which indicates that the true abundance for a gene can vary by 19% up or down between replicates. We find this number increases as the number of biological replicates decreases (0.20, 0.22 for five and two replicates, respectively). More importantly, the scatter in the two replicate dataset for tag-wise estimates is large for low expressor genes and BCV values range quite high (~0.8).
@@ -147,33 +154,37 @@ The voom (variance modeling at the observational level) transformation is applie
 3. The fitted log-cpm (from the linear model fit) for each observation is converted into a predicted count. Using this predicted count the standard deviation is interpolated from the trend.
 4. The inverse squared predicted standard deviation for each observation becomes the weight for that observation.
 
-After this, the RNA-seq data can be analyzed as if it was microarray data. This means for example that any of the linear modelling or gene set testing methods in the limma package can be applied to RNA-seq data.
+After this, the RNA-seq data can be analyzed as if it was microarray data. This means for example that any of the linear modelling or gene set testing methods in the limma package can be applied to RNA-seq data. _Note for the design matrix we include an intercept, since we will be using linear models as opposed to GLMs._
 
 ```{r}
 
 # Create design matrix
-design <- model.matrix(~ 0 + pData(bottomly.eset)$strain)
-colnames(design) <- levels(pData(bottomly.eset)$strain)
+design <- model.matrix(~ pData(bottomly.eset)$strain)
   
 # Apply voom transformation
-v <- voom(exprs(bottomly.eset), design, plot=TRUE)
+nf <- calcNormFactors(bottomly.eset)
+v <- voom(exprs(bottomly.eset), design, lib.size=colSums(exprs(bottomly.eset))*nf, normalize.method="quantile", plot=TRUE)
 
 # Do same for 5 replicate dataset
-design <- model.matrix(~ 0 + pData(bottomly.5reps)$strain)
-colnames(design) <- levels(pData(bottomly.5reps)$strain)
-v.5reps <- voom(exprs(bottomly.5reps), design, plot=TRUE)
+design <- model.matrix(~ pData(bottomly.5reps)$strain)
+nf <- calcNormFactors(bottomly.5reps)
+v.5reps <- voom(exprs(bottomly.5reps), design, lib.size=colSums(exprs(bottomly.5reps))*nf, 
+                normalize.method="quantile", plot=TRUE)
 
 # Do same for 2 replicates dataset
-design <- model.matrix(~ 0 + pData(bottomly.2reps)$strain)
-colnames(design) <- levels(pData(bottomly.2reps)$strain)
-v.2reps <- voom(exprs(bottomly.2reps), design, plot=TRUE)
+design <- model.matrix(~ pData(bottomly.2reps)$strain)
+nf <- calcNormFactors(bottomly.2reps)
+v.2reps <- voom(exprs(bottomly.2reps), design, lib.size=colSums(exprs(bottomly.2reps))*nf, 
+                normalize.method="quantile", plot=TRUE)
 
 ```
 
-Low replicate samples --> will have larger weights?
-
 ## DEG comparisons with full dataset
-The next step is to identify a list of differentially expressed genes using each of the three tools. We will set a fairly liberal threshold of FDR < 0.05 to select genes as 'siginificantly' differentially expressed between the two mouse strains. 
+The next step is to identify a list of differentially expressed genes using each of the three tools. We will set a fairly liberal threshold of FDR < 0.01 to select genes as 'siginificantly' differentially expressed between the two mouse strains. 
+
+```{r}
+p.threshold <- 0.05
+```
 
 
 ### edgeR 
@@ -194,47 +205,117 @@ lrt.edgeR <- glmLRT(fit.edgeR, contrast=contrasts.edgeR)
 
 # Access results tables
 edgeR_results <- lrt.edgeR$table
-sig.edgeR <- decideTestsDGE(lrt.edgeR, adjust.method="BH", p.value = 0.05)
+sig.edgeR <- decideTestsDGE(lrt.edgeR, adjust.method="BH", p.value = p.threshold)
+genes.edgeR <- row.names(edgeR_results)[which(sig.edgeR == 1)]
 
 ```
 
 ### DESeq2
-Similar to edgeR, with DESeq2, we have a DESeq object that was previously created when we ran the `DESeq()` function. The difference is that DESeq is less verbose, requiring fewer lines of code to generate the same information. In one fell swoop, the DESeq functions generates all the required statistics from normalization to coefficients from the model fit. Al we are required to do is specify the comparisons we wish to make and extract the relevant data.  **How many genes are differentially expressed between C57BL/6J and DBA/2J?** 
+Similar to edgeR, with DESeq2, we have a DESeq object that was previously created when we ran the `DESeq()` function. The difference is that DESeq is less verbose, requiring fewer lines of code to generate the same information. In one fell swoop, the DESeq functions generates all the required statistics from normalization to coefficients from the model fit. All we are required to do is specify the comparisons we wish to make and extract the relevant data.  **How many genes are differentially expressed between C57BL/6J and DBA/2J?** 
 
 ```{r}
 
 ## DESeq2 ##
 contrast.deseq2 <- list("strainC57BL.6J", "strainDBA.2J")
 deseq2_results <- results(dds, contrast=contrast.deseq2)
-deseq2_results$threshold <- as.logical(deseq2_results$padj < 0.01)
+deseq2_results$threshold <- as.logical(deseq2_results$padj < p.threshold)
+genes.deseq <- row.names(deseq2_results)[which(deseq2_results$threshold)]
 ```
 
+
+### limma-voom
+For limma-voom we are taking our voom transformations and using that matrix as input to normal-based limma functions that we would use on microarray data. **Plot a histogram of your transformed data and you should see that it is normally distributed.** The steps that follow are: i) fitting the linear model given the factor of interest and ii) compute moderated statistics based on empirical Bayes moderation of the standard errors towards a common value.
+
+```{r}
+
+## voom-limma ##
+# Create design matrix
+design <- model.matrix(~ pData(bottomly.eset)$strain)
+
+# Usual limma pipeline
+fit.voom <- lmFit(v, design)
+fit.voom <- eBayes(fit.voom)
+
+voom_results <- topTable(fit.voom, coef=2,  adjust="BH", number = nrow(exprs(bottomly.eset)))
+voom_results$threshold <- as.logical(voom_results$adj.P.Val < p.threshold)
+genes.voom <- row.names(voom_results)[which(voom_results$threshold)]
+```
+
+### Overlapping genes
+
+We will use a venn diagram to depict the overlaps. To do this you will be required to install the package `gplots`. 
+
+```{r, eval=FALSE}
+install.packages('gplots')
+```
+
+Once installed, load the library and use the following code to plot the Venn Diagram of overlapping genes between the three different tools. _Note: there are fancier packages to create this figure!_
+
+```{r}
+library(gplots)
+venn(list(edgeR = genes.edgeR, DESeq2 = genes.deseq, voom = genes.voom))
+```
+
+
+## DEG comparisons with 2 replicates
+Ok now, let's try this with our 2 replicate data, and see how results compare from the three different tools.
+
+### edgeR
+
+```{r}
+## edgeR ##
+# Design matrix
+design.mat <- model.matrix(~ 0 + dge.2reps$samples$group)
+colnames(design.mat) <- c("C57BL", "DBA")
+
+# Model fitting
+fit.edgeR <- glmFit(dge.2reps, design.mat)
+
+# Differential expression
+contrasts.edgeR <- makeContrasts(C57BL - DBA, levels=design.mat)
+lrt.edgeR <- glmLRT(fit.edgeR, contrast=contrasts.edgeR)
+
+# Access results tables
+edgeR_results_2reps <- lrt.edgeR$table
+sig.edgeR.2reps <- decideTestsDGE(lrt.edgeR, adjust.method="BH", p.value = p.threshold)
+genes.edgeR.2reps <- row.names(edgeR_results_2reps)[which(sig.edgeR.2reps == 1)]
+```
+
+### DESeq2
+
+```{r}
+
+## DESeq2 ##
+contrast.deseq2 <- list("strainC57BL.6J", "strainDBA.2J")
+deseq2_results_2reps <- results(dds.2rep, contrast=contrast.deseq2)
+deseq2_results_2reps$threshold <- as.logical(deseq2_results_2reps$padj < p.threshold)
+genes.deseq.2reps <- row.names(deseq2_results_2reps)[which(deseq2_results_2reps$threshold)]
+```
 
 ### limma-voom
 ```{r}
 
 ## voom-limma ##
-
 # Create design matrix
-design <- model.matrix(~ 0 + pData(bottomly.eset)$strain)
-colnames(design) <- c("C57BL", "DBA")
-
-# Make contrasts
-contrasts.voom <- makeContrasts(C57BL - DBA, levels=design)
+design <- model.matrix(~ pData(bottomly.2reps)$strain)
 
 # Usual limma pipeline
-fit.voom <- lmFit(v, design, contrasts=contrasts.voom)
-fit.voom <- eBayes(fit)
+fit.voom <- lmFit(v.2reps, design)
+fit.voom <- eBayes(fit.voom)
 
-fit.voom <- treat(fit.voom,lfc=log2(1.2))
-topTreat(fit.voom)
-voom_results <- topTable(fit.voom, adjust="BH", number = nrow(exprs(bottomly.eset)))
-sig.voom <- as.logical(voom_results$adj.P.Val < 0.01)
+voom_results_2reps <- topTable(fit.voom, coef=2,  adjust="BH", number = nrow(exprs(bottomly.2reps)))
+voom_results_2reps$threshold <- as.logical(voom_results_2reps$adj.P.Val < p.threshold)
+genes.voom.2reps <- row.names(voom_results_2reps)[which(voom_results_2reps$threshold)]
 
 ```
-  
 
-## DEG comparisons with 2 replicates
+### Overlapping genes
+
+How do the number of genes identified using the 2-replicate dataset compared to the results from the full dataset? How does the overlap compare?
+
+```{r}
+venn(list(edgeR = genes.edgeR.2reps, DESeq2 = genes.deseq.2reps, voom = genes.voom.2reps))
+```
 
 # References
 
