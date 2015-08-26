@@ -17,6 +17,6 @@ In this module, learners will use [R Statistical Software](https://www.r-project
 
 > ## Learning Objectives 
 >
-> * 
-> * 
-> * 
+> * understanding the relationship between mean and variance and how that changes with the number of replicates
+> * familariizing with tools for DE analysis in R
+
