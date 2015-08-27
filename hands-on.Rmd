@@ -202,7 +202,7 @@ lrt.edgeR <- glmLRT(fit.edgeR, contrast=contrasts.edgeR)
 # Access results tables
 edgeR_results <- lrt.edgeR$table
 sig.edgeR <- decideTestsDGE(lrt.edgeR, adjust.method="BH", p.value = p.threshold)
-genes.edgeR <- row.names(edgeR_results)[which(sig.edgeR == 1)]
+genes.edgeR <- row.names(edgeR_results)[which(sig.edgeR != 0)]
 
 ```
 
@@ -274,7 +274,7 @@ lrt.edgeR <- glmLRT(fit.edgeR, contrast=contrasts.edgeR)
 # Access results tables
 edgeR_results_2reps <- lrt.edgeR$table
 sig.edgeR.2reps <- decideTestsDGE(lrt.edgeR, adjust.method="BH", p.value = p.threshold)
-genes.edgeR.2reps <- row.names(edgeR_results_2reps)[which(sig.edgeR.2reps == 1)]
+genes.edgeR.2reps <- row.names(edgeR_results_2reps)[which(sig.edgeR.2reps != 0)]
 ```
 
 ### DESeq2
