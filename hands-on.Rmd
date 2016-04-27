@@ -12,7 +12,7 @@ cleanbib()
 options("citation_format" = "pandoc")
 ```
 
-## Setting up
+# Setting up
 
 First you are going to need to [download the dataset](https://github.com/mistrm82/msu_ngs2015/raw/master/bottomly_eset.RData). By clicking on the link the `.RData` file should automatically donwload to your laptop, or you can right click to save. Keep note of where it gets saved.
 
