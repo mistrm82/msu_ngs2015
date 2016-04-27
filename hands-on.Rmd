@@ -25,6 +25,7 @@ Let's start by loading the filtered data and the required libraries:
 library(DESeq2)
 library(edgeR)
 library(limma)
+library(Biobase)
 
 load('bottomly_eset.RData')
 ```
