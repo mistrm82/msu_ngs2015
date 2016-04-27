@@ -15,6 +15,8 @@ options("citation_format" = "pandoc")
 
 # The mean-variance relationship (and what it means)
 
+First you are going to need to [download the dataset](https://github.com/mistrm82/msu_ngs2015/raw/master/bottomly_eset.RData). By clicking on the link the `.RData` file should automatically donwload to your laptop, or you can right click to save. Move this file into you current working directory as displayed in RStudio. 
+
 Let's start by loading the filtered data and the required libraries:
 ```{r load}
 
