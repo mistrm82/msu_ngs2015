@@ -78,13 +78,16 @@ Look at the dispersion-mean plots below, What do you see?
 
 ```{r deseq2, fig.align='center', warning=FALSE, message=FALSE}
 # Create DESeq2 datasets
-dds <- DESeqDataSetFromMatrix(countData = exprs(bottomly.eset), colData = pData(bottomly.eset), design = ~ strain )
+dds <- DESeqDataSetFromMatrix(countData = exprs(bottomly.eset), colData = pData(bottomly.eset), 
+design = ~ strain )
 dds <- DESeq(dds)
 
-dds.5rep <- DESeqDataSetFromMatrix(countData = exprs(bottomly.5reps), colData = pData(bottomly.5reps), design = ~ strain )
+dds.5rep <- DESeqDataSetFromMatrix(countData = exprs(bottomly.5reps), colData = pData(bottomly.5reps), 
+design = ~ strain )
 dds.5rep <- DESeq(dds.5rep)
 
-dds.2rep <- DESeqDataSetFromMatrix(countData = exprs(bottomly.2reps), colData = pData(bottomly.2reps), design = ~ strain )
+dds.2rep <- DESeqDataSetFromMatrix(countData = exprs(bottomly.2reps), colData = pData(bottomly.2reps), 
+design = ~ strain )
 dds.2rep <- DESeq(dds.2rep)
 
 
