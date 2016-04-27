@@ -68,7 +68,7 @@ More, importantly we see the **scatter tends to reduce as we increase the number
 # Statistical models for DE analysis
 So how do we best model this type of data? The low levels of replication rule out, for all practical purposes, distribution-free rank or permutation-based methods. The Poisson model doesn't work either -- it is a single parameter model with mean == variance and real data has more variance than Poisson can explain (which we will look at in our dataset). The Negative Binomial (NB) model is a good approximation, where the variability between replicates is modeled by the **dispersion parameter** `r citep("10.1038/nprot.2013.099")`. 
 
-[edgeR](http://www.bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) and [DESeq2](https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.pdf) are two very popular tools which implement differential expression analysis on the basis of the NB model. They offer overlapping functionality but differ crucially in the way dispersions are estimated. Accurate estimation of the dispersion parameter is critical for the statistical inference of differential expression.
+[edgeR](http://www.bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) and [DESeq2](https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.pdf) are two very popular tools which implement differential expression analysis on the basis of the NB model. They offer overlapping functionality but differ in the way dispersions are estimated. Accurate estimation of the dispersion parameter is critical for the statistical inference of differential expression.
 
 
 ## DESeq2
@@ -94,10 +94,10 @@ plotDispEsts(dds.5rep)
 plotDispEsts(dds.2rep)
 ```
 
-The final estimates for datasets with so few replicates result in values that are so far off from the initial estimates. This is because the strength of shrinkage depends (i) on an estimate of how close true dispersion values tend to be to the fit and (ii) on the degrees of freedom. _As the sample size decreases, the shrinkage increases in strength._ In the case of a 2 replicate dataset it seems that for many genes the dispersion is being well overestimated which may lower the rate of true detection.
+The final estimates for datasets with so few replicates result in values that are so far off from the initial estimates. This is because the strength of shrinkage depends (i) on an estimate of how close true dispersion values tend to be to the fit and (ii) on the degrees of freedom. **As the sample size decreases, the shrinkage increases in strength.** In the case of a 2 replicate dataset it seems that for many genes the **dispersion is being well overestimated** which may lower the rate of true detection.
 
 ## edgeR
-In edgeR, a common dispersion is first estimated for all the tags and then an empirical Bayes strategy is applied for **squeezing the tagwise dispersions towards the common or trended dispersion**. The 'Trended' and 'Common' dispersions are partly for diagnostic purposes and partly to give a general idea of the magnitude of the dispersions before it estimates the tagwise values (however, neither are used explicitly). The amount of shrinkage is determined by the prior weight given to the common dispersion (or the dispersion trend) and the precision of the tagwise estimates, and can be considered as the prior degrees of freedom `r citep("10.1093/bioinformatics/btp616")`.
+In edgeR, a common dispersion is first estimated for all the tags and then an empirical Bayes strategy is applied for **squeezing the tagwise dispersions towards the common or trended dispersion**. The 'Trended' and 'Common' dispersions are partly for diagnostic purposes and partly to give a general idea of the magnitude of the dispersions before it estimates the tagwise values (however, neither are used explicitly). **The amount of shrinkage is determined by** the prior weight given to the common dispersion (or the dispersion trend) and the precision of the tagwise estimates, and can be considered as the prior degrees of freedom `r citep("10.1093/bioinformatics/btp616")`.
 
 Biological CV (BCV) is the coefficient of variation with which the (unknown) true abundance of the gene varies between replicate RNA samples. Dispersion estimates are obtained by squaring the BCV values. Look at the BCV-mean expression plots below, What do you see?
 
@@ -143,7 +143,7 @@ plotBCV(dge.5reps)
 plotBCV(dge.2reps)
 ```
 
-The BCV value can be interpreted as the percentage of variation observed in the true abundance of a gene between replicates. For example, with the full dataset the common BCV is 0.19 which indicates that the true abundance for a gene can vary by 19% up or down between replicates. We find this number increases as the number of biological replicates decreases (0.20, 0.22 for five and two replicates, respectively). More importantly, the scatter in the two replicate dataset for tag-wise estimates is large for low expressor genes and BCV values range quite high (~0.8).
+The BCV value can be interpreted as the percentage of variation observed in the true abundance of a gene between replicates. For example, with the **full dataset the common BCV is 0.19 which indicates that the true abundance for a gene can vary by 19% up or down between replicates**. We find this number increases as the number of biological replicates decreases (0.20, 0.22 for five and two replicates, respectively). More importantly, the scatter in the two replicate dataset for tag-wise estimates is large for low expressor genes and BCV values range quite high (~0.8).
 
 
 ## limma-voom
