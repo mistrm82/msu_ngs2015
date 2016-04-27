@@ -184,7 +184,7 @@ v.2reps <- voom(exprs(bottomly.2reps), design, lib.size=colSums(exprs(bottomly.2
 ```
 
 ## DEG comparisons with full dataset
-The next step is to identify a list of differentially expressed genes using each of the three tools. We will set a fairly liberal threshold of FDR < 0.01 to select genes as 'siginificantly' differentially expressed between the two mouse strains. 
+The next step is to identify a list of differentially expressed genes using each of the three tools. We will set a fairly liberal threshold of FDR < 0.05 to select genes as 'siginificantly' differentially expressed between the two mouse strains. 
 
 ```{r}
 p.threshold <- 0.05
