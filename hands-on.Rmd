@@ -170,7 +170,8 @@ design <- model.matrix(~ pData(bottomly.eset)$strain)
   
 # Apply voom transformation
 nf <- calcNormFactors(bottomly.eset)
-v <- voom(exprs(bottomly.eset), design, lib.size=colSums(exprs(bottomly.eset))*nf, normalize.method="quantile", plot=TRUE)
+v <- voom(exprs(bottomly.eset), design, lib.size=colSums(exprs(bottomly.eset))*nf, 
+normalize.method="quantile", plot=TRUE)
 
 # Do same for 5 replicate dataset
 design <- model.matrix(~ pData(bottomly.5reps)$strain)
