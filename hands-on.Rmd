@@ -151,14 +151,14 @@ Negative Binomial methods treat the dispersion estimates as if they were known p
 
 Enter [limma-voom](http://www.bioconductor.org/packages/release/bioc/vignettes/limma/inst/doc/usersguide.pdf).
 
-The voom (variance modeling at the observational level) transformation is applied to the read counts. 
+The voom (variance modeling at the observational level) transformation is applied to the read counts. **It uses the variance of genes to create weights for use in linear models.**
 
 1. Gene-wise linear models are fitted to the normalized log-cpm values (accounting for all relevant factors); this generates a residual standard deviation for each gene 
 2. A robust trend is then fitted to the residual standard deviations as a function of the average log-count for each gene
 3. The fitted log-cpm (from the linear model fit) for each observation is converted into a predicted count. Using this predicted count the standard deviation is interpolated from the trend.
 4. The inverse squared predicted standard deviation for each observation becomes the weight for that observation.
 
-After this, the RNA-seq data can be analyzed as if it was microarray data. This means for example that any of the linear modelling or gene set testing methods in the limma package can be applied to RNA-seq data. _Note for the design matrix we include an intercept, since we will be using linear models as opposed to GLMs._
+After this, the RNA-seq data can be analyzed as if it was microarray data. This means for example that any of the linear modelling or gene set testing methods in the limma package can be applied to RNA-seq data. It is usually best to work with voom when you have really noisy data and are dealing with a number of factors. _Note for the design matrix we include an intercept, since we will be using linear models as opposed to GLMs._
 
 ```{r, fig.align='center'}
 
