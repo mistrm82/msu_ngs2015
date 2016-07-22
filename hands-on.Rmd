@@ -21,6 +21,17 @@ Now, you can open up`RStudio` and open up a new project for this module (`File >
 Let's start by loading the filtered data and the required libraries:
 ```{r load}
 
+# Install requested libraries from Bioconductor
+
+# try http:// if https:// URLs are not supported
+
+source("https://bioconductor.org/biocLite.R")
+biocLite("DESeq2")
+source("https://bioconductor.org/biocLite.R")
+biocLite("edgeR")
+source("https://bioconductor.org/biocLite.R")
+biocLite("limma")
+
 # Load required libraries 
 library(DESeq2)
 library(edgeR)
